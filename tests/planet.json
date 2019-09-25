@@ -1,0 +1,19 @@
+[
+    {
+        "Method":"Planet",
+        "Params":[
+            100.0,
+            100.0,
+            10.0,
+            "Player1"
+        ]
+    },
+    {
+        "Method":"Text",
+        "Params":[
+            100.0,
+            100.0,
+            "Player1"
+        ]
+    }
+]
