@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"reflect"
 	"strings"
 	"time"
 
@@ -119,10 +118,10 @@ window.pz = panzoom(area, {autocenter: true, bounds: true})
 
 }
 
-type Action struct {
-	Method string
-	Params []json.Token
-}
+type Action map[string]interface{}
+
+//Method string
+//Params []json.Token
 
 type HaliteCanvas struct {
 	*svg.SVG
@@ -182,12 +181,49 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 
 	canvas := NewHaliteCanvas(&t)
 
-	for _, act := range actions {
-		params := make([]reflect.Value, 0, len(act.Params))
-		for _, param := range act.Params {
-			params = append(params, reflect.ValueOf(param))
+	for _, action := range actions {
+		method, ok := action["Method"]
+		if !ok {
+			log.Print("Method field not present")
+			continue
 		}
-		reflect.ValueOf(canvas).MethodByName(act.Method).Call(params)
+		switch method {
+		case "Entity":
+			x, ok := action["X"].(float64)
+			if !ok {
+				log.Printf("Expected %T, got %T", x, action["X"])
+				continue
+			}
+			y, ok := action["Y"].(float64)
+			if !ok {
+				log.Printf("Expected %T, got %T", y, action["Y"])
+				continue
+			}
+			r, ok := action["R"].(float64)
+			if !ok {
+				log.Printf("Expected %T, got %T", r, action["R"])
+				continue
+			}
+			classInterface, ok := action["Class"].([]interface{})
+			if !ok {
+				log.Printf("Expected %T, got %T", classInterface, action["Class"])
+				continue
+			}
+			class := make([]string, len(classInterface))
+			for i, item := range classInterface {
+				class[i], ok = item.(string)
+				if !ok {
+					log.Printf("Expected %T, got %T", class[i], item)
+				}
+			}
+			canvas.Entity(x, y, r, class)
+
+		}
+		//params := make([]reflect.Value, 0, len(act.Params))
+		//for _, param := range act.Params {
+		//params = append(params, reflect.ValueOf(param))
+		//}
+		//reflect.ValueOf(canvas).MethodByName(act.Method).Call(params)
 	}
 
 	turns[v["id"]] = t
