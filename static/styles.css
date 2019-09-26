@@ -2,15 +2,23 @@
     fill: white;
     stroke: black
 }
+
+.ship {
+    stroke-width: 0%;
+}
+
 .player1 {
     fill: red;
 }
+
 .player2 {
     fill: blue;
 }
+
 .player3 {
     fill: purple;
 }
+
 .player4 {
     fill: green;
 }
