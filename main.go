@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -23,7 +25,8 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 	})
 
-	prefix := router.PathPrefix("/{game}/{id:[0-9]+}").Subrouter()
+	router.Path("/visor/{game}").HandlerFunc(serveGamePage)
+	prefix := router.PathPrefix("/img/{game}/{id:[0-9]+}").Subrouter()
 	prefix.Methods("POST").HandlerFunc(postHandler)
 	prefix.Methods("GET").HandlerFunc(getHandler)
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
@@ -50,25 +53,26 @@ func NewTurn() *Turn {
 	}
 }
 
-func (t Turn) Svg() template.HTML {
+func (t Turn) Svg() []byte {
 	buf := &bytes.Buffer{}
 	canvas := svg.New(buf)
 	//svginitfmt := `<svg width="%.*f%s" height="%.*f%s">`
 	//buf.WriteString(fmt.Sprintf(svginitfmt, 2, 500.0, "", 2, 500.0, ""))
-	buf.WriteString("<svg class=\"fillscreen\" >")
+	//buf.WriteString("<svg >")
+	canvas.Startraw("class=\"fillscreen\"")
 	canvas.Gid("scene")
 	buf.Write(t.Bytes())
 	canvas.Gend()
 	canvas.End()
-	return template.HTML(buf.String())
+	return buf.Bytes()
 }
 
 var turns = make(map[string]Turn)
 
-func getHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("handle get")
+func serveGamePage(w http.ResponseWriter, r *http.Request) {
+	log.Println("handle GamePage")
 	v := mux.Vars(r)
-
+	game := v["game"]
 	tpl, err := template.New("Visor").Parse(`
 <!DOCTYPE html>
 <html>
@@ -81,27 +85,64 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
     <meta name='author' content='Andrei Kashcha'>
     <meta name='title' content='SVG panzoom demo' />
 	<link rel="stylesheet" href="/styles.css">
-    <title>SVG panzoom demo</title>
-	<style>
-	html { 
-  		height: 100%;
-	}
-	body { 
-  		height: 100%;
-		width: 100%;
-	}
-	.fillscreen { 
-  		height: 100%;
-		width: 100%;
-	}
-	</style>
+    <title id="title" ></title>
   </head>
-  <body>
-  {{ . }}
+  <body onkeydown="keyboardNavigation(event)">
+	<div class="fillscreen" id="viewport"></div>
     <script src='https://unpkg.com/panzoom@8.4.0/dist/panzoom.min.js'></script>
     <script>
-var area = document.getElementById('scene')
-window.pz = panzoom(area, {autocenter: true, bounds: true})
+	var turn = 1;
+	var game = {{ . }}
+
+	console.log("start")
+
+	function initController(){
+		console.log("Controller initialization")
+		httpGetAsync("/img/" + game + "/" + turn, function(text){
+			console.log("image requested")
+			document.getElementById('viewport').innerHTML = text
+			var area = document.getElementById('scene')
+			window.pz = panzoom(area, {
+				autocenter: true,
+				bounds: true,
+				  filterKey: function(/* e, dx, dy, dz */) {
+					// don't let panzoom handle this event:
+					return true;
+				  }
+			})
+		})
+		document.getElementById('title').innerHTML = game + " turn " + turn
+	}
+
+	function httpGetAsync(theUrl, callback)
+	{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.onreadystatechange = function() { 
+			if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+				callback(xmlHttp.responseText);
+		}
+		xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+		xmlHttp.send(null);
+	}
+	initController()
+
+	function keyboardNavigation(e){
+		switch(e.keyCode) {
+		  case 37:
+			if (turn > 1) {
+				turn = turn-1
+				initController()
+			}
+			break;
+		  case 39:
+			if (turn < 300) {
+				turn = turn+1
+				initController()
+			}
+			break;
+		} 
+	}
+
     </script>
   </body>
 </html>
@@ -109,13 +150,20 @@ window.pz = panzoom(area, {autocenter: true, bounds: true})
 	if err != nil {
 		panic(err)
 	}
+	w.Header().Add("Content-Type", "text/html")
+	tpl.Execute(w, game)
+
+}
+
+func getHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("handle get")
+	v := mux.Vars(r)
 
 	w.Header().Add("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
+
 	t := turns[v["id"]]
-
-	tpl.Execute(w, t.Svg())
-
+	w.Write(t.Svg())
 }
 
 type Action map[string]interface{}
@@ -176,7 +224,6 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	actions := []Action{}
 	decoder := json.NewDecoder(r.Body)
 	decoder.Decode(&actions)
-	//canvas.Circle(100, 100, 100)
 	log.Printf("%#v", actions)
 
 	canvas := NewHaliteCanvas(&t)
@@ -188,7 +235,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		switch method {
-		case "Entity":
+		case "Circle":
 			x, ok := action["X"].(float64)
 			if !ok {
 				log.Printf("Expected %T, got %T", x, action["X"])
@@ -219,12 +266,26 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			canvas.Entity(x, y, r, class)
 
 		}
-		//params := make([]reflect.Value, 0, len(act.Params))
-		//for _, param := range act.Params {
-		//params = append(params, reflect.ValueOf(param))
-		//}
-		//reflect.ValueOf(canvas).MethodByName(act.Method).Call(params)
 	}
 
 	turns[v["id"]] = t
+}
+
+func openbrowser(url string) {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
