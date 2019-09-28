@@ -25,7 +25,7 @@ func init() {
     <script src='https://unpkg.com/panzoom@8.4.0/dist/panzoom.min.js'></script>
     <script>
 	var turn = 1;
-	var game = {{ . }}
+	var game = {{ .Name }}
 
 	console.log("start")
 

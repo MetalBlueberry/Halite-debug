@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -17,7 +18,7 @@ func main() {
 
 	router.Path("/visor/{game}").HandlerFunc(serveGamePage)
 
-	prefix := router.PathPrefix("/img/{game}/{id:[0-9]+}").Subrouter()
+	prefix := router.PathPrefix("/img/{game}/{turn:[0-9]+}").Subrouter()
 	prefix.Methods("POST").HandlerFunc(postImgHandler)
 	prefix.Methods("GET").HandlerFunc(getImgHandler)
 
@@ -38,7 +39,10 @@ func main() {
 func serveGamePage(w http.ResponseWriter, r *http.Request) {
 	log.Println("handle GamePage")
 	v := mux.Vars(r)
-	game := v["game"]
+	gameName := v["game"]
+
+	game := GetGame(gameName)
+
 	w.Header().Add("Content-Type", "text/html")
 	tpl.Execute(w, game)
 }
@@ -46,25 +50,32 @@ func serveGamePage(w http.ResponseWriter, r *http.Request) {
 func getImgHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("handle get")
 	v := mux.Vars(r)
+	gameName := v["game"]
+	turnNumber, _ := strconv.Atoi(v["turn"])
+
+	turn := GetGame(gameName).GetTurn(turnNumber)
 
 	w.Header().Add("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
-	t := turns[v["id"]]
-	w.Write(t.Svg())
+	w.Write(turn.Svg())
 }
 
 func postImgHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("handle post")
+	//log.Println("handle post")
 	v := mux.Vars(r)
-	t := turns[v["id"]]
+	gameName := v["game"]
+	turnNumber, _ := strconv.Atoi(v["turn"])
 
 	actions := []Action{}
 	decoder := json.NewDecoder(r.Body)
 	decoder.Decode(&actions)
-	log.Printf("%#v", actions)
+	//log.Printf("%#v", actions)
 
-	canvas := NewHaliteCanvas(&t)
+	game := GetGame(gameName)
+
+	turn := game.GetTurn(turnNumber)
+	canvas := NewHaliteCanvas(turn)
 
 	for _, action := range actions {
 		method, ok := action["Method"]
@@ -102,11 +113,8 @@ func postImgHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			canvas.Entity(x, y, r, class)
-
 		}
 	}
-
-	turns[v["id"]] = t
 }
 
 func openbrowser(url string) {
