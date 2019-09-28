@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"sync"
-
-	svg "github.com/ajstarks/svgo/float"
 )
 
 var gamesMutex = sync.Mutex{}
@@ -84,11 +82,8 @@ func NewTurn() *Turn {
 
 func (t *Turn) Svg() []byte {
 	buf := &bytes.Buffer{}
-	canvas := svg.New(buf)
-	canvas.Startraw("class=\"fillscreen\"")
-	canvas.Gid("scene")
+
 	buf.Write(t.Bytes())
-	canvas.Gend()
-	canvas.End()
+
 	return buf.Bytes()
 }

@@ -21,7 +21,9 @@ func init() {
     <title id="title" ></title>
   </head>
   <body onkeydown="keyboardNavigation(event)">
-	<div class="fillscreen" id="viewport"></div>
+	<svg class="fillscreen" >
+		<g class="fillscreen" id="scene"></g>
+	</svg>
     <script src='https://unpkg.com/panzoom@8.4.0/dist/panzoom.min.js'></script>
     <script>
 	var turn = 1;
@@ -29,22 +31,28 @@ func init() {
 
 	console.log("start")
 
-	function initController(){
-		console.log("Controller initialization")
+	function loadTurn(callback){
 		httpGetAsync("/img/" + game + "/" + turn, function(text){
 			console.log("image requested")
-			document.getElementById('viewport').innerHTML = text
-			var area = document.getElementById('scene')
-			window.pz = panzoom(area, {
-				autocenter: true,
-				bounds: true,
-				  filterKey: function(/* e, dx, dy, dz */) {
-					// don't let panzoom handle this event:
-					return true;
-				  }
-			})
+			document.getElementById('scene').innerHTML = text
+			if(callback && typeof callback === "function") {
+				callback()
+			}
 		})
 		document.getElementById('title').innerHTML = game + " turn " + turn
+	}
+
+	function initController(){
+		console.log("Controller initialization")
+		var area = document.getElementById('scene')
+		window.pz = panzoom(area, {
+			autocenter: true,
+			bounds: true,
+			  filterKey: function(/* e, dx, dy, dz */) {
+				// don't let panzoom handle this event:
+				return true;
+			  }
+		})
 	}
 
 	function httpGetAsync(theUrl, callback)
@@ -57,20 +65,23 @@ func init() {
 		xmlHttp.open("GET", theUrl, true); // true for asynchronous 
 		xmlHttp.send(null);
 	}
-	initController()
+
+	loadTurn(function(){
+		initController()
+	})
 
 	function keyboardNavigation(e){
 		switch(e.keyCode) {
 		  case 37:
 			if (turn > 1) {
 				turn = turn-1
-				initController()
+				loadTurn()
 			}
 			break;
 		  case 39:
 			if (turn < 300) {
 				turn = turn+1
-				initController()
+				loadTurn()
 			}
 			break;
 		} 
