@@ -8,8 +8,6 @@ import (
 	svg "github.com/ajstarks/svgo/float"
 )
 
-type Action map[string]interface{}
-
 type HaliteCanvas struct {
 	*svg.SVG
 }
@@ -22,13 +20,13 @@ func NewHaliteCanvas(w io.Writer) *HaliteCanvas {
 
 var emptyclose = "/>\n"
 
-func (canvas HaliteCanvas) Planet(x float64, y float64, r float64, ownerID string, s ...string) {
+func (canvas HaliteCanvas) Line(x1 float64, y1 float64, x2 float64, y2 float64, class []string, s ...string) {
 	d := canvas.Decimals
-	fmt.Fprintf(canvas.Writer, `<circle class="planet %s" cx="%.*f" cy="%.*f" r="%.*f" %s`, ownerID, d, x, d, y, d, r, endstyle(s, emptyclose))
+	fmt.Fprintf(canvas.Writer, `<line class="%s" x1="%.*f" y1="%.*f" x2="%.*f" y2="%.*f" %s`, strings.Join(class, " "), d, x1, d, y1, d, x2, d, y2, endstyle(s, emptyclose))
 }
-func (canvas HaliteCanvas) Entity(x float64, y float64, r float64, class []string, s ...string) {
+func (canvas HaliteCanvas) Circle(x float64, y float64, r float64, class []string, s ...string) {
 	d := canvas.Decimals
-	fmt.Fprintf(canvas.Writer, `<circle class="planet %s" cx="%.*f" cy="%.*f" r="%.*f" %s`, strings.Join(class, " "), d, x, d, y, d, r, endstyle(s, emptyclose))
+	fmt.Fprintf(canvas.Writer, `<circle class="%s" cx="%.*f" cy="%.*f" r="%.*f" %s`, strings.Join(class, " "), d, x, d, y, d, r, endstyle(s, emptyclose))
 }
 
 // endstyle modifies an SVG object, with either a series of name="value" pairs,

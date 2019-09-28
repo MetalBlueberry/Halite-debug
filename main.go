@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/metalblueberry/sicase/internal/actions"
 )
 
 func main() {
@@ -25,7 +26,7 @@ func main() {
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
 	srv := &http.Server{
-		Handler: router,
+		Handler: logging(router),
 		Addr:    "127.0.0.1:8888",
 		// Gfmtood practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
@@ -37,7 +38,6 @@ func main() {
 }
 
 func serveGamePage(w http.ResponseWriter, r *http.Request) {
-	log.Println("handle GamePage")
 	v := mux.Vars(r)
 	gameName := v["game"]
 
@@ -48,7 +48,6 @@ func serveGamePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getImgHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("handle get")
 	v := mux.Vars(r)
 	gameName := v["game"]
 	turnNumber, _ := strconv.Atoi(v["turn"])
@@ -62,12 +61,11 @@ func getImgHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func postImgHandler(w http.ResponseWriter, r *http.Request) {
-	//log.Println("handle post")
 	v := mux.Vars(r)
 	gameName := v["game"]
 	turnNumber, _ := strconv.Atoi(v["turn"])
 
-	actions := []Action{}
+	actions := []actions.Action{}
 	decoder := json.NewDecoder(r.Body)
 	decoder.Decode(&actions)
 	//log.Printf("%#v", actions)
@@ -85,34 +83,13 @@ func postImgHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		switch method {
 		case "Circle":
-			x, ok := action["X"].(float64)
-			if !ok {
-				log.Printf("Expected %T, got %T", x, action["X"])
-				continue
-			}
-			y, ok := action["Y"].(float64)
-			if !ok {
-				log.Printf("Expected %T, got %T", y, action["Y"])
-				continue
-			}
-			r, ok := action["R"].(float64)
-			if !ok {
-				log.Printf("Expected %T, got %T", r, action["R"])
-				continue
-			}
-			classInterface, ok := action["Class"].([]interface{})
-			if !ok {
-				log.Printf("Expected %T, got %T", classInterface, action["Class"])
-				continue
-			}
-			class := make([]string, len(classInterface))
-			for i, item := range classInterface {
-				class[i], ok = item.(string)
-				if !ok {
-					log.Printf("Expected %T, got %T", class[i], item)
-				}
-			}
-			canvas.Entity(x, y, r, class)
+			x, y, r := action.Circle()
+			class := action.Class()
+			canvas.Circle(x, y, r, class)
+		case "Line":
+			x1, y1, x2, y2 := action.Line()
+			class := action.Class()
+			canvas.Line(x1, y1, x2, y2, class)
 		}
 	}
 }
@@ -133,4 +110,14 @@ func openbrowser(url string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func logging(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		defer func() {
+			log.Printf("%s:%s in %s", r.Method, r.URL.Path, time.Since(start))
+		}()
+		next.ServeHTTP(w, r)
+	})
 }
