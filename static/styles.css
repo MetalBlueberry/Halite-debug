@@ -6,6 +6,12 @@ body {
     height: 100%;
     width: 100%;
 }
+
+line {
+    stroke-width: 0.3;
+    stroke: black;
+}
+
 .fillscreen { 
     height: 100%;
     width: 100%;
@@ -34,3 +40,19 @@ body {
 .player4 {
     fill: green;
 }
+
+.path {
+    stroke: gray;
+    opacity: 0.5;
+}
+
+.blockfalse{
+    stroke: green;
+    opacity: 0.5;
+}
+
+.blocktrue{
+    stroke: red;
+    opacity: 0.5;
+}
+
