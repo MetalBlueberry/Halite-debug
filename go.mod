@@ -1,4 +1,4 @@
-module github.com/metalblueberry/sicase
+module github.com/metalblueberry/Halite-debug
 
 go 1.13
 

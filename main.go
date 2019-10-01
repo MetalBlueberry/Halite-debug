@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/metalblueberry/sicase/internal/actions"
+	"github.com/metalblueberry/Halite-debug/internal/actions"
 )
 
 func main() {

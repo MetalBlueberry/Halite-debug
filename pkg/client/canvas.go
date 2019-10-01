@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/metalblueberry/sicase/internal/actions"
+	. "github.com/metalblueberry/Halite-debug/internal/actions"
 	log "github.com/sirupsen/logrus"
 )
 
