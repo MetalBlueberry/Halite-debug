@@ -1,0 +1,74 @@
+[
+    {
+        "Method":"Circle",
+        "X":100.0,
+        "Y":100.0,
+        "R":10.0,
+        "Class":["planet player1"]
+    },
+    {
+        "Method":"Circle",
+        "X":100.0,
+        "Y":120.0,
+        "R":5.0,
+        "Class":["planet player2"]
+    },
+    {
+        "Method":"Circle",
+        "X":120.0,
+        "Y":110.0,
+        "R":1.0,
+        "Class":["ship player1"]
+    },
+    {
+        "Method":"Circle",
+        "X":120.0,
+        "Y":100.0,
+        "R":1.0,
+        "Class":["ship player1"]
+    },
+    {
+        "Method":"Circle",
+        "X":120.0,
+        "Y":90.0,
+        "R":1.0,
+        "Class":["ship player1"]
+    },
+    {
+        "Method":"Circle",
+        "X":120.0,
+        "Y":140.0,
+        "R":1.0,
+        "Class":["ship player2"]
+    },
+    {
+        "Method":"Circle",
+        "X":120.0,
+        "Y":130.0,
+        "R":1.0,
+        "Class":["ship player2"]
+    },
+    {
+        "Method":"Circle",
+        "X":120.0,
+        "Y":120.0,
+        "R":1.0,
+        "Class":["ship player2"]
+    },
+    {
+        "Method":"Line",
+        "X1":100.0,
+        "Y1":120.0,
+        "X2":120.0,
+        "Y2":100.0,
+        "Class":["target"]
+    },
+    {
+        "Method":"Line",
+        "X1":100.0,
+        "Y1":100.0,
+        "X2":120.0,
+        "Y2":100.0,
+        "Class":["target"]
+    }
+]
