@@ -16,15 +16,19 @@ import (
 type Canvas struct {
 	Server  string
 	GameID  string
+	Enabled bool
+
 	client  *http.Client
 	actions []Action
 }
 
-func NewCanvasServer(server, gameID string) *Canvas {
+func NewCanvasServer(server, gameID string, enabled bool) *Canvas {
 	// initialize http client
 	return &Canvas{
 		Server:  server,
 		GameID:  gameID,
+		Enabled: enabled,
+
 		client:  &http.Client{},
 		actions: make([]Action, 0),
 	}
@@ -32,8 +36,8 @@ func NewCanvasServer(server, gameID string) *Canvas {
 
 var defaultCanvas *Canvas
 
-func InitializeDefaultCanvas(server, gameID string) {
-	defaultCanvas = NewCanvasServer(server, gameID)
+func InitializeDefaultCanvas(server, gameID string, enabled bool) {
+	defaultCanvas = NewCanvasServer(server, gameID, enabled)
 }
 
 // Send connect with the server to draw the current set of instructions in the given turn.
@@ -45,6 +49,10 @@ func (c *Canvas) Send(turn int) {
 }
 
 func (c *Canvas) SendWithContext(ctx context.Context, turn int) error {
+	log.WithField("enabled", c.Enabled).Debug("Debug server")
+	if !c.Enabled {
+		return nil
+	}
 	// marshal User to json
 	bytes, err := json.Marshal(c.actions)
 	if err != nil {
@@ -69,6 +77,9 @@ func (c *Canvas) SendWithContext(ctx context.Context, turn int) error {
 
 func Circle(p Circler, class ...string) { defaultCanvas.Circle(p, class...) }
 func (c *Canvas) Circle(p Circler, class ...string) {
+	if !c.Enabled {
+		return
+	}
 	c.actions = append(c.actions, circleAction(p, class...))
 }
 
@@ -85,6 +96,9 @@ func circleAction(p Circler, class ...string) Action {
 
 func Line(p Liner, class ...string) { defaultCanvas.Line(p, class...) }
 func (c *Canvas) Line(p Liner, class ...string) {
+	if !c.Enabled {
+		return
+	}
 	c.actions = append(c.actions, lineAction(p, class...))
 }
 

@@ -48,11 +48,20 @@ line {
 
 .blockfalse{
     stroke: green;
-    opacity: 0.5;
+    opacity: 0.3;
 }
 
 .blocktrue{
     stroke: red;
     opacity: 0.5;
 }
+.nextStep{
+    stroke: blue;
+    opacity: 0.5;
+}
 
+.colider {
+    stroke: black;
+    stroke-width: 0.3;
+    fill: transparent;
+}
